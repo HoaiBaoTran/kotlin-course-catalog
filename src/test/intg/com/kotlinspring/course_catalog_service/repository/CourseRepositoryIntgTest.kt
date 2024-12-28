@@ -1,7 +1,9 @@
 package com.kotlinspring.course_catalog_service.repository
 
-import com.kotlinspring.course_catalog_service.dto.CourseDTO
+import com.kotlinspring.course_catalog_service.util.PostgresSQLContainerInitializer
 import com.kotlinspring.course_catalog_service.util.courseEntityList
+import com.kotlinspring.course_catalog_service.util.courseEntityListWithInstructors
+import com.kotlinspring.course_catalog_service.util.instructorEntity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -9,22 +11,33 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.web.reactive.server.WebTestClient
+import org.testcontainers.containers.PostgreSQLContainer
 import java.util.stream.Stream
 
 @DataJpaTest
 @ActiveProfiles("test")
-class CourseRepositoryIntgTest {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class CourseRepositoryIntgTest : PostgresSQLContainerInitializer(){
 
     @Autowired
     lateinit var courseRepository: CourseRepository
 
+    @Autowired
+    lateinit var instructorRepository: InstructorRepository
+
     @BeforeEach
     fun setUp() {
+
         courseRepository.deleteAll()
-        val courses = courseEntityList()
+        instructorRepository.deleteAll()
+
+        val instructor = instructorEntity("Luffy")
+        instructorRepository.save(instructor)
+
+        val courses = courseEntityListWithInstructors(instructor)
         courseRepository.saveAll(courses)
     }
 
