@@ -3,27 +3,35 @@ package com.kotlinspring.course_catalog_service.service
 import com.kotlinspring.course_catalog_service.dto.CourseDTO
 import com.kotlinspring.course_catalog_service.entity.Course
 import com.kotlinspring.course_catalog_service.exception.CourseNotFoundException
+import com.kotlinspring.course_catalog_service.exception.InstructorNotValidException
 import com.kotlinspring.course_catalog_service.repository.CourseRepository
 import mu.KLogging
 import org.springframework.stereotype.Service
 
 @Service
 class CourseService(
-    val courseRepository: CourseRepository
+    val courseRepository: CourseRepository,
+    val instructorService: InstructorService
 ) {
 
     companion object : KLogging()
 
     fun addCourse(courseDTO: CourseDTO): CourseDTO {
+        val instructorOptional = instructorService.findByInstructorId(courseDTO.instructorId!!)
+
+        if (!instructorOptional.isPresent) {
+            throw InstructorNotValidException("Instructor Not valid for the Id: ${courseDTO.instructorId}")
+        }
+
         val courseEntity = courseDTO.let {
-            Course(null, it.name, it.category)
+            Course(null, it.name, it.category, instructorOptional.get())
         }
         courseRepository.save(courseEntity)
 
         logger.info { "Saved new course: $courseEntity" }
 
         return courseEntity.let {
-            CourseDTO(it.id, it.name, it.category)
+            CourseDTO(it.id, it.name, it.category, it.instructor!!.id)
         }
     }
 
